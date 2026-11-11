@@ -1,0 +1,38 @@
+# Caddy reverse proxy for the DSH panel.
+#
+# - DSH listens on 127.0.0.1:5043 only.
+# - Only /panel/* is exposed; everything else returns 404.
+# - Caddy admin API is disabled; use `systemctl reload caddy` instead.
+#
+# Replace YOUR_DOMAIN_OR_IP and the certificate paths.
+# For a real domain, use:
+#   YOUR_DOMAIN {
+#       tls you@example.com
+#       import panel
+#   }
+
+{
+	admin off
+	auto_https disable_redirects
+}
+
+(panel) {
+	route /panel/* {
+		uri strip_prefix /panel
+		rewrite * /aurabot/api/ext/panel{uri}
+		reverse_proxy 127.0.0.1:5043
+	}
+	respond 404
+}
+
+# Port 80 is intentionally blocked by the firewall in the reference deployment.
+# If you keep it, use it only for a redirect to HTTPS.
+:80 {
+	import panel
+}
+
+# The reference deployment uses a self-signed certificate for a bare IP.
+:443 {
+	tls /etc/caddy/certs/panel.crt /etc/caddy/certs/panel.key
+	import panel
+}

@@ -1,0 +1,16 @@
+{
+  "name": "dy-im",
+  "version": "1.0.0",
+  "description": "Douyin private-message bridge for DSH Aurabot",
+  "main": "bridge.mjs",
+  "scripts": {
+    "start": "node bridge.mjs"
+  },
+  "keywords": [],
+  "author": "CactusIsland",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "douyin-im": "^1.1.0"
+  }
+}

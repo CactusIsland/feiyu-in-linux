@@ -1,0 +1,5 @@
+[Unit]
+Description=Dafeiyu health guard
+[Service]
+Type=oneshot
+ExecStart=/opt/fish/scripts/guard.sh

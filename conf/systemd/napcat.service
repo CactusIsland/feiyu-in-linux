@@ -1,0 +1,26 @@
+[Unit]
+Description=NapCat (QQ NT + OneBot 11, headless via Xvfb)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# NapCat / QQ NT still needs to run as root in this setup.
+# See docs/security.md for the trade-offs and the recommended network isolation.
+User=root
+Environment=HOME=/root
+WorkingDirectory=/root
+ExecStart=/usr/bin/xvfb-run -a /opt/napcat/opt/QQ/qq --no-sandbox -q YOUR_BOT_QQ
+
+Restart=always
+RestartSec=5
+MemoryHigh=900M
+MemoryMax=1300M
+CPUQuota=120%
+OOMScoreAdjust=200
+
+StandardOutput=append:/var/log/napcat.log
+StandardError=append:/var/log/napcat.log
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,5 @@
+[Unit]
+Description=Dafeiyu daily backup
+[Service]
+Type=oneshot
+ExecStart=/opt/fish/scripts/backup.sh

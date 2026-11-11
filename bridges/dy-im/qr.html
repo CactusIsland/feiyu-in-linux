@@ -1,0 +1,14 @@
+<!doctype html><meta charset=utf-8>
+<title>抖音私信登录</title>
+<style>
+ body{margin:0;background:#111;color:#eee;font:16px system-ui;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:12px}
+ img{width:min(60vh,420px);background:#fff;border-radius:12px;padding:8px}
+ .hint{opacity:.65;font-size:14px;text-align:center;line-height:1.6}
+</style>
+<div class="hint">用抖音 App 扫这个二维码登录私信<br>页面每 3 秒自动刷新（过期会换新码）</div>
+<img id="q" src="login.png">
+<div class="hint" id="s"></div>
+<script>
+let n=0;
+setInterval(()=>{document.getElementById('q').src='login.png?t='+Date.now()},3000);
+</script>

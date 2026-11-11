@@ -1,0 +1,11 @@
+/var/log/dsh-web.log /var/log/napcat.log {
+    su root root
+    daily
+    rotate 7
+    maxsize 50M
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+}

@@ -1,0 +1,48 @@
+[Unit]
+Description=DeepSeek Harness Web (Aurabot QQ runtime)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dsh
+Group=dsh
+WorkingDirectory=/var/lib/dsh/workspace
+Environment=DSH_HOME=/var/lib/dsh
+Environment=NODE_ENV=production
+# Optional: TTS / API keys. Keep this file root:root 0600.
+EnvironmentFile=-/etc/dsh/tts.env
+
+ExecStart=/usr/local/bin/dsh web \
+  --host 127.0.0.1 \
+  --port 5043 \
+  --public-url https://YOUR_DOMAIN_OR_IP \
+  --trusted-host 127.0.0.1:5043 \
+  --trusted-host localhost:5043 \
+  --trusted-host YOUR_DOMAIN_OR_IP \
+  --no-open
+
+Restart=always
+RestartSec=5
+
+# --- Security hardening (see docs/security.md) ---
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/dsh /opt/fish/media /tmp
+# If you enable the Douyin module, dy-cli may need to write cookies/cache:
+# ReadWritePaths=/opt/douyin/data
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+# --- Resource guardrails for a 2C2G box ---
+MemoryHigh=500M
+MemoryMax=800M
+CPUQuota=150%
+OOMScoreAdjust=-500
+
+StandardOutput=append:/var/log/dsh-web.log
+StandardError=append:/var/log/dsh-web.log
+
+[Install]
+WantedBy=multi-user.target
