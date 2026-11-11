@@ -24,7 +24,8 @@ tools/bili-data/            扫码登录、vlog 渲染、视频投稿脚本
   "subtitleChars": 5000,
   "commentsCount": 15,
   "topics": "AI,机器人,有意思的知识",
-  "commentChance": 0.1
+  "commentChance": 0.1,
+  "replyComments": false
 }
 ```
 
@@ -38,21 +39,23 @@ tools/bili-data/            扫码登录、vlog 渲染、视频投稿脚本
 | `bili_recall` | 翻学过的内容 | 否 |
 | `bili_report` | 汇总学习报告 | 否 |
 | `make_vlog` | 生成竖屏 vlog，只给主人预览 | 否（本地生成） |
+| `bili_my_videos` | 看自己视频的评论情况 | 否 |
 | `bili_publish` | 投稿视频，必须 `confirm=true` | 是 |
 | `bili_like` | 点赞/取消点赞 | 是 |
 | `bili_follow` | 关注 UP 主 | 是 |
 | `bili_comment` | 发评论（过隐私检查） | 是 |
 | `bili_dm` | 发私信（过隐私检查） | 是 |
 
-写操作需要 `tools/bili-data/cookies.txt`；默认只在主人私聊挂载。`bili_publish` 每天最多 2 条，且必须显式 `confirm`。
+写操作需要 `tools/bili-data/cookies.txt`；默认只在主人私聊挂载。`bili_publish` 每天最多 2 条，且必须显式 `confirm`。自动回复自己视频下的评论默认关闭（`replyComments=false`）；`/vlog`、`做视频`、`发视频`、`录一段` 会触发固定 vlog 流程，不靠模型选工具。
 
 ## 2. `tools/bili-data`
 
 | 文件 | 作用 |
 |---|---|
 | `login.mjs` | 扫码登录，本地生成二维码，写 `cookies.txt`（600） |
-| `vlog.py` | 文字 → 豆包 TTS + 字幕 + 配图背景 → 720×1280 MP4 |
-| `upload.py` | 用 `bilibili-api-python` 投稿 |
+| `vlog.py` | 文字 → 豆包 TTS + 字幕 + 配图背景 → 720×1280 MP4（顶部主图 + 底部文字） |
+| `upload.py` | 用 `bilibili-api-python` 投稿（自动生成封面，支持 dry 预上传） |
+| `my_videos.py` | 列出自己账号的视频与评论数 |
 
 安装：
 
@@ -78,6 +81,7 @@ BILI_DATA_DIR=/opt/bili-data node login.mjs
 - `cookies.txt` 等同账号控制权：600 权限、不要进 Git、不要发聊天、不要放公开目录。
 - 建议用独立小号；不要把主号 Cookie 放在共享服务器上。
 - 写操作先小规模测试；`bili_publish` 先本地预览再 `confirm`。
+- 自动回复评论默认关闭；打开后每 10 分钟检查一次，第一条 100%、其余 70%，每次最多 3 条。建议先只开 `bili_my_videos` 观察。
 - B 站自动化可能违反平台条款，存在风控/封号风险，风险自负。
 
 ## 4. 排查

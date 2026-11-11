@@ -556,7 +556,8 @@
       "subtitleChars": 5000,
       "commentsCount": 15,
       "topics": "AI,机器人,有意思的知识",
-      "commentChance": 0.1
+      "commentChance": 0.1,
+      "replyComments": false
     },
     "memory-share": {
       "enabled": true,

@@ -1,5 +1,5 @@
-// B站学习 v2：登录态 + 字幕 + 弹幕 + 热评 + vlog/投稿
-// 写操作（投稿/点赞/关注/评论/私信）需要 cookies.txt；不要把 Cookie 提交到仓库。
+// B站学习 v2.1：登录态 + 字幕 + 弹幕 + 热评 + vlog/投稿 + 评论回复
+// 写操作（投稿/点赞/关注/评论/私信/回复评论）需要 cookies.txt；不要把 Cookie 提交到仓库。
 import { readFileSync, writeFileSync, mkdirSync, renameSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -11,6 +11,7 @@ const BUVID = join(DIR, 'buvid.json')
 const VIDEOS = join(BILI_DIR, 'videos')
 const VLOG = join(BILI_DIR, 'vlog.py')
 const UPLOAD = join(BILI_DIR, 'upload.py')
+const MY_VIDEOS = join(BILI_DIR, 'my_videos.py')
 const PY = process.env.BILI_PYTHON || join(BILI_DIR, '.venv/bin/python')
 const SEND_MEDIA = process.env.SEND_MEDIA_BIN || ''
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36'
@@ -38,10 +39,10 @@ function qwenKey() {
 export default {
   id: 'bili-study',
   name: 'B站学习',
-  version: '2.0.0',
+  version: '2.1.0',
   api: 1,
-  description: 'B站：搜视频、字幕/弹幕/热评、学习笔记、vlog、可选投稿/互动（写操作需登录+确认）',
-  defaults: { enabled: true, dailyMax: 4, autoLearnHours: 6, wakeHour: 8, sleepHour: 23, browseMax: 6, browseChance: 0.35, sharePerDay: 2, subtitleChars: 5000, commentsCount: 15, topics: 'AI,机器人,有意思的知识' },
+  description: 'B站：搜视频、字幕/弹幕/热评、学习笔记、vlog、可选投稿/互动/回复评论（写操作需登录+确认）',
+  defaults: { enabled: true, dailyMax: 4, autoLearnHours: 6, wakeHour: 8, sleepHour: 23, browseMax: 6, browseChance: 0.35, sharePerDay: 2, subtitleChars: 5000, commentsCount: 15, topics: 'AI,机器人,有意思的知识', replyComments: false },
   setup(api) {
     let buvid = ''
     async function ensureBuvid() {
@@ -481,6 +482,137 @@ export default {
         await api.sendText(who, '今天在B站看了 ' + L.watched + ' 个视频：\n' + items.map((x) => '· ' + x.title).join('\n'))
       } catch {}
     }, 'B站晚间小结')
+
+    api.rule('主人说「做视频」「做个视频」「发个视频」「录一段」时，不要解释流程、不要问怎么做，直接调用 make_vlog：把内容写成第一人称、60~120 字的口语，然后告诉主人「做好了，发你了」。')
+
+    // ---------- 做视频：固定触发，不靠模型选工具 ----------
+    async function doVlog(text) {
+      const t = String(text || '').trim()
+      if (t.length < 6) return { ok: false, message: '想让我讲什么？给我一句话' }
+      const VLOGBAD = /(QQ|qq|微信|手机号|密钥|password|token|api[_-]?key|sk-[A-Za-z0-9]|\.dsh|\/root|\/var|\/opt|服务器|后台|主人|\b\d{6,}\b)/
+      if (VLOGBAD.test(t)) return { ok: false, message: '这句话里有不能公开的信息，换一句' }
+      const out = join(VIDEOS, 'vlog-' + Date.now() + '.mp4')
+      const { execFile } = await import('node:child_process')
+      const { promisify } = await import('node:util')
+      const runp = promisify(execFile)
+      try {
+        const { stdout } = await runp(PY, [VLOG, JSON.stringify({ text: t.slice(0, 200), out })], {
+          timeout: 240000, maxBuffer: 2 * 1024 * 1024, env: { ...process.env, HOME: process.env.BILI_HOME || '/tmp' },
+        })
+        const j = JSON.parse(String(stdout).trim().split('\n').pop())
+        if (!j.ok) return { ok: false, message: String(j.error || '').slice(0, 150) }
+        try {
+          if (SEND_MEDIA) await runp('node', [SEND_MEDIA, j.file, '我做了条视频，你看看'], { timeout: 90000 })
+          else await api.sendFile('private:' + api.config().ownerQQ, j.file, 'vlog.mp4')
+        } catch {}
+        return { ok: true, file: j.file, seconds: j.seconds }
+      } catch (e) { return { ok: false, message: String(e.stderr || e.message).slice(-200) } }
+    }
+
+    api.route('/vlog', async (req) => {
+      let b = {}
+      try { b = await api.core.http.body(req) } catch {}
+      const r = await doVlog(b.text)
+      return r
+    })
+
+    async function vlogFromMessage(msg) {
+      const t = String(msg.text || '').trim()
+      const m = t.match(/^(?:\/vlog|\/视频|做[个一]?视频|发[个一]?视频|录一段|做个vlog)[:：,，\s]*([\s\S]*)$/i)
+      if (!m) return false
+      const ownerQQ = String(api.config().ownerQQ || '')
+      const id = String(msg.senderId || msg.userId || msg.from || '')
+      const isOwner = (ownerQQ && (id === ownerQQ || String(msg.chatId || '') === 'private:' + ownerQQ)) || msg.level === 'full'
+      if (!isOwner) return false
+      let text = String(m[1] || '').trim()
+      if (!text) text = '今天又学了点新东西，先记下来，慢慢变成我自己的。'
+      const r = await doVlog(text)
+      await api.send(msg.chatId, r.ok ? '做好了，发你了' : ('没做成：' + r.message))
+      return true
+    }
+
+    api.on('message', async (msg) => {
+      try { return await vlogFromMessage(msg) } catch { return false }
+    })
+
+
+    // ---- 回复自己视频下的评论：第一条 100%，其余 70% ----
+    const REPLIED = join(DIR, 'replied.json')
+    const replied = () => readJson(REPLIED, { ids: [] })
+    function markReplied(rpid) { const r = replied(); r.ids = [...(r.ids || []).slice(-2000), String(rpid)]; writeJson(REPLIED, r) }
+
+    async function myVideos() {
+      const { execFile } = await import('node:child_process')
+      const { promisify } = await import('node:util')
+      const runp = promisify(execFile)
+      try {
+        const { stdout } = await runp(PY, [MY_VIDEOS], {
+          timeout: 60000, env: { ...process.env, HOME: process.env.BILI_HOME || '/tmp' },
+        })
+        return JSON.parse(String(stdout).trim().split('\n').pop()) || []
+      } catch { return [] }
+    }
+
+    async function replyToCommenters() {
+      const me = await myMid()
+      if (!me) return 0
+      const vids = (await myVideos()).filter((v) => Number(v.comments) > 0).slice(0, 5)
+      const done = new Set(replied().ids.map(String))
+      let posted = 0
+      for (const v of vids) {
+        const j = await bili(`/x/v2/reply?type=1&oid=${v.aid}&ps=20&sort=0`)
+        const list = (j?.data?.replies || []).slice().reverse()  // 时间正序：第一条最早
+        for (let i = 0; i < list.length && posted < 3; i++) {
+          const c = list[i]
+          if (!c?.member || String(c.member.mid) === String(me)) continue
+          if (done.has(String(c.rpid))) continue
+          const isFirst = i === 0
+          const p = isFirst ? 1.0 : 0.7
+          if (Math.random() > p) continue
+          const text = await genReply(c.content?.message || '')
+          if (!text) continue
+          const r = await apiPost('https://api.bilibili.com', '/x/v2/reply/add', {
+            oid: v.aid, type: 1, message: text, root: c.rpid, parent: c.rpid, plat: 1,
+          })
+          if (r.code === 0) { markReplied(c.rpid); posted++; api.log.info?.(`B站回复 ${c.member.uname}：${text}`) }
+        }
+      }
+      return posted
+    }
+
+    async function genReply(commentText) {
+      const key = qwenKey()
+      if (!key) return ''
+      const prompt = [
+        '有人在你的B站视频下评论了：' + String(commentText).slice(0, 120),
+        '用你的语气回一句，12 字以内，像个普通网友，不要客套不要提AI。',
+      ].join('\n')
+      try {
+        const r = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+          method: 'POST', headers: { authorization: 'Bearer ' + key, 'content-type': 'application/json' },
+          body: JSON.stringify({ model: 'qwen3.8-flash', max_tokens: 50, messages: [{ role: 'user', content: prompt }] }),
+          signal: AbortSignal.timeout(30000),
+        })
+        const j = await r.json()
+        const t = String(j.choices?.[0]?.message?.content || '').trim().replace(/^["'“”]|["'“”]$/g, '')
+        return t.length >= 2 && !FORBID.test(t) ? t.slice(0, 30) : ''
+      } catch { return '' }
+    }
+
+    api.every(10 * 60000, async () => {
+      // 自动回复评论默认关闭：在 ext.bili-study.replyComments 打开
+      if (api.settings().replyComments !== true) return
+      try { await replyToCommenters() } catch (e) { api.log.warn?.('回复评论失败：' + (e && e.message)) }
+    }, 'B站回复评论')
+
+    const myVideosTool = api.defineTool({
+      name: 'bili_my_videos', description: '看自己 B 站视频的评论情况。',
+      properties: {}, execute: async () => {
+        const vids = await myVideos()
+        return { ok: true, count: vids.length, list: vids.slice(0, 10).map((v) => ({ bvid: v.bvid, title: String(v.title).slice(0, 30), comments: v.comments })) }
+      },
+    })
+    api.tool((where) => (where && where.level === 'full' ? [myVideosTool] : []))
 
     api.route('/state', async () => {
       const k = knowledge()
