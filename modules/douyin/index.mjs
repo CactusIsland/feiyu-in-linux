@@ -107,7 +107,7 @@ export default {
     const tools = [
 
       api.defineTool({
-        name: 'douyin_comment',
+        name: 'douyin_comment_disabled',
         description: '在一条抖音视频下发一条评论。内容会先过隐私检查。',
         properties: { target: { type: 'string', description: '视频链接或 id' }, text: { type: 'string' } },
         required: ['target', 'text'],
@@ -120,7 +120,7 @@ export default {
         },
       }),
       api.defineTool({
-        name: 'douyin_like',
+        name: 'douyin_like_disabled',
         description: '给一条抖音视频点赞。',
         properties: { target: { type: 'string' } },
         required: ['target'],
@@ -131,7 +131,7 @@ export default {
         },
       }),
       api.defineTool({
-        name: 'douyin_favorite',
+        name: 'douyin_favorite_disabled',
         description: '收藏一条抖音视频。',
         properties: { target: { type: 'string' } },
         required: ['target'],
@@ -142,7 +142,7 @@ export default {
         },
       }),
       api.defineTool({
-        name: 'douyin_follow',
+        name: 'douyin_follow_disabled',
         description: '关注一个抖音用户。参数可以是用户主页链接或 sec_uid。',
         properties: { user: { type: 'string' } },
         required: ['user'],
