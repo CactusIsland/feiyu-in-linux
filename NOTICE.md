@@ -26,6 +26,14 @@ open-source projects. The original code is MIT-licensed (see `LICENSE`).
 - License: see the package's own license file after `npm install`.
 - Not bundled: installed as an npm dependency.
 
+## Bilibili tooling
+
+- Referenced by: `tools/bili-data/` and `modules/bili-study/`
+- Python: `bilibili-api-python`, `Pillow`
+- Node: `qrcode`
+- System: `ffmpeg`, `fonts-wqy-zenhei`
+- Not bundled: install separately; see each package's license.
+
 ## External services and binaries
 
 NapCat / QQ NT, DeepSeek Harness (DSH), Caddy, Node.js, SQLite, and any model

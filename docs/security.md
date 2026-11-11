@@ -66,6 +66,7 @@ CPUQuota=150%
 - 危险命令确认：`security.dangerConfirm=true`。
 - `outbound-guard`：发送前拦 `sk-*`、`Bearer`、`*_API_KEY=...`、`/root/.dsh`、`/etc/caddy|dsh|systemd`、Windows 盘符、`base64://` 大块、主人 QQ、主人私聊原话（群聊场景）。
 - `memory-scope`：群聊/别人私聊只召回本聊天记忆，失败 fail-closed。
+- `bili-study` / `tools/bili-data`：B 站 Cookie 等同账号控制权，`cookies.txt` 600、不进 Git；投稿/点赞/关注/评论/私信只在主人私聊挂载，`bili_publish` 必须 `confirm=true`，建议独立小号、低频。
 - `diary`：只从主人私聊 + 群聊取素材，默认 `visibility=friends`，避免把别人的私聊写进公开说说。
 - `dy-im/bridge.mjs`：白名单 + 发送前隐私过滤（QQ/微信/手机号/邮箱/密钥/路径/URL/服务器词）。
 - `message-index`：按 chatId 作用域检索，没有 chatId 的会话宁可不收。

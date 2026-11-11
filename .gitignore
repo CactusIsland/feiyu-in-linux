@@ -32,3 +32,9 @@ key.txt
 *.key
 dsh_deploy
 dsh_deploy.pub
+tools/bili-data/cookies.txt
+tools/bili-data/cookies_raw.txt
+tools/bili-data/login.png
+tools/bili-data/videos/
+tools/bili-data/.venv/
+tools/bili-data/node_modules/

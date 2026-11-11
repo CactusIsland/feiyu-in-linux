@@ -546,10 +546,17 @@
     },
     "bili-study": {
       "enabled": true,
-      "dailyMax": 4,
-      "commentsCount": 15,
+      "dailyMax": 10,
       "autoLearnHours": 6,
-      "topics": "AI,机器人,有意思的知识"
+      "wakeHour": 8,
+      "sleepHour": 23,
+      "browseMax": 6,
+      "browseChance": 0.35,
+      "sharePerDay": 2,
+      "subtitleChars": 5000,
+      "commentsCount": 15,
+      "topics": "AI,机器人,有意思的知识",
+      "commentChance": 0.1
     },
     "memory-share": {
       "enabled": true,

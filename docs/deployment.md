@@ -109,6 +109,20 @@ sudo chmod 640 $DSH_HOME/plugins-data/aurabot/config.json
 
 开源版只保留热榜、搜索、只读评论、豆包总结；评论/点赞/收藏/关注/自动召唤已移除。如果你已经登录过，请在抖音 App 里退出登录，并删除服务器上的 `/opt/douyin/data/home/.dy/cookies/`。确实要跑，请用独立设备、独立小号、低频只读，风险自负。
 
+## 5.6 B 站（可选）
+
+B 站能力见 [bilibili.md](bilibili.md)。登录/vlog/投稿脚本在 `tools/bili-data/`：
+
+```bash
+cd tools/bili-data
+npm install
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+BILI_DATA_DIR=/opt/bili-data node login.mjs
+```
+
+`cookies.txt` 权限 600，不要提交到 Git。`bili_publish` 需要 `confirm=true`；点赞/关注/评论/私信属于写操作，建议独立小号、低频。
+
 ## 6. NapCat
 
 安装 NapCat Linux 版本（官方包或你自己的部署），让 QQ 在 Xvfb 下运行：

@@ -14,7 +14,7 @@
 - **记忆分层**：热记忆、全量存档、冷记忆、压缩/遗忘、记忆图谱、线索召回、连续性纸条、可公开记忆。
 - **消息检索**：`message-index` 用 SQLite FTS5 + `Intl.Segmenter` 预分词，按聊天作用域检索，不再全量解压会话。
 - **安全边界**：dsh 降权运行、systemd 沙箱、出站 DLP、记忆作用域、面板 scrypt+HMAC、Caddy 只暴露 `/panel/*`。
-- **外部世界**：联网搜索、链接阅读、梗百科、B 站学习、抖音接口模式（热榜/搜索/只读评论/豆包总结）。
+- **外部世界**：联网搜索、链接阅读、梗百科、B 站学习/字幕/弹幕/热评/vlog/可选投稿、抖音接口模式（热榜/搜索/只读评论/豆包总结）。
 
 > [!WARNING]
 > **抖音模块默认关闭，仓库不含任何 Cookie 或登录态。** 不建议在服务器上登录抖音：自动化可能触发风控，已有 3 年封禁案例。开源版已移除评论/点赞/收藏/关注/自动召唤等写操作，只保留只读能力；确实要跑请用独立设备、独立小号、低频只读，风险自负。
@@ -55,10 +55,11 @@ $DSH_HOME/plugins-data/aurabot/       memories.json / chatlog / modules-data / s
 ```text
 aurabot-src/         上游 dsh-aurabot-qq 源码（MIT，保留原 LICENSE）
 modules/             自定义模块，可直接放进 $DSH_HOME/plugins-data/aurabot/modules/
+tools/bili-data/     B 站扫码登录 / vlog 渲染 / 投稿脚本
 bridges/dy-im/       抖音私信桥（douyin-im，纯 Node）
 conf/                systemd / Caddy / logrotate / SSH / 守护与备份脚本
   config.example.json
-docs/                架构、部署、记忆、安全、抖音、模块清单
+docs/                架构、部署、记忆、安全、B 站、抖音、模块清单
 personas/            脱敏后的人格示例
 ```
 
@@ -73,6 +74,7 @@ personas/            脱敏后的人格示例
 7. **装服务**：参考 `conf/systemd/`；DSH 用专用用户 `dsh`，加沙箱；NapCat 单独服务。
 8. **面板**：Caddy 反代 `/panel/*` 到 `127.0.0.1:5043`，首次访问 `/panel/ui` 设置账号密码。
 9. **守护与备份**：`conf/scripts/guard.sh` + `backup.sh`，配 `fish-guard.timer` / `fish-backup.timer`。
+10. **B 站（可选）**：见 [docs/bilibili.md](docs/bilibili.md)；登录脚本在 `tools/bili-data/`，Cookie 600、不要提交。
 
 详细步骤见 [docs/deployment.md](docs/deployment.md)。
 
@@ -83,6 +85,7 @@ personas/            脱敏后的人格示例
 - 建议：SSH 仅密钥、`PermitRootLogin no`、UFW 只开 22/443、DSH 只监听回环、面板独立鉴权、备份 700/600、定期异地备份。
 - 记忆默认按聊天隔离；群聊和非主人私聊不会召回主人私聊内容；「永不遗忘」采用 fail-closed。
 - 出站前统一过 `outbound-guard`：密钥、路径、主人私聊原话命中就改写或拦截。
+- B 站 Cookie 等同账号控制权：`cookies.txt` 600、不要进 Git；投稿/点赞/关注/评论/私信属于写操作，建议独立小号、低频、先预览再确认。
 
 安全模型与已知限制见 [docs/security.md](docs/security.md)。
 
@@ -92,6 +95,7 @@ personas/            脱敏后的人格示例
 - [部署](docs/deployment.md)
 - [记忆系统](docs/memory.md)
 - [安全模型](docs/security.md)
+- [B 站学习与 vlog/投稿](docs/bilibili.md)
 - [抖音模块与私信桥](docs/douyin.md)
 - [模块清单](docs/modules.md)
 
