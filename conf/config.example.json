@@ -248,7 +248,7 @@
     "shotLibrary": 300
   },
   "douyin": {
-    "enabled": true,
+    "enabled": false,
     "autoBrowse": true,
     "intervalHours": 4,
     "maxRunsPerDay": 3,
@@ -346,7 +346,7 @@
   "modules": {
     "douyin": {
       "forkedFrom": "2.0.0",
-      "enabled": true,
+      "enabled": false,
       "useBuiltin": false
     }
   },
@@ -539,11 +539,10 @@
       "days": 90
     },
     "douyin": {
-      "enabled": true,
-      "dailyMax": 3,
+      "enabled": false,
+      "dailyMax": 1,
       "dailyBudgetCny": 1,
-      "commentCount": 20,
-      "autoSummon": false
+      "commentCount": 20
     },
     "bili-study": {
       "enabled": true,

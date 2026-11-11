@@ -95,6 +95,20 @@ sudo chmod 640 $DSH_HOME/plugins-data/aurabot/config.json
 
 首次上线建议先把 `dryRun` 设为 `true`，确认回复内容后再关。
 
+## 5.5 抖音（可选，高风险，默认关闭）
+
+**不建议在主服务器/共享服务器上登录抖音。** 抖音自动化可能触发风控，已有 3 年封禁案例。参考配置把三处开关都设为 `false`：
+
+```json
+{
+  "douyin": { "enabled": false },
+  "modules": { "douyin": { "enabled": false, "useBuiltin": false } },
+  "ext": { "douyin": { "enabled": false } }
+}
+```
+
+开源版只保留热榜、搜索、只读评论、豆包总结；评论/点赞/收藏/关注/自动召唤已移除。如果你已经登录过，请在抖音 App 里退出登录，并删除服务器上的 `/opt/douyin/data/home/.dy/cookies/`。确实要跑，请用独立设备、独立小号、低频只读，风险自负。
+
 ## 6. NapCat
 
 安装 NapCat Linux 版本（官方包或你自己的部署），让 QQ 在 Xvfb 下运行：

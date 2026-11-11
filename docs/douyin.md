@@ -1,5 +1,8 @@
 # 抖音模块与私信桥
 
+> [!WARNING]
+> **不建议在服务器上登录抖音。** 抖音自动化可能触发风控/封号，已有 3 年封禁案例。默认配置关闭抖音；仓库不含任何 Cookie、登录态或设备标识。本文只描述实现与风险，不要在主服务器/共享服务器上扫码登录，也不要把 Cookie 留在服务器上。
+
 抖音能力分成两条独立链路，登录态也不共用：
 
 ```text
@@ -20,20 +23,20 @@
 |---|---|---|
 | `douyin_hot` | 抖音热榜，不需要登录 | 否 |
 | `douyin_search` | 搜视频，返回标题/作者/点赞/评论数 | 否 |
-| `douyin_watch` | 读评论区，找豆包总结；没有可召唤 | 可能写（召唤） |
+| `douyin_watch` | 读评论区，找豆包总结；只读，不召唤 | 否 |
 | `douyin_recent` | 最近看过的视频 | 否 |
-| `douyin_comment` | 发评论（过隐私检查） | 是 |
-| `douyin_like` | 点赞 | 是 |
-| `douyin_favorite` | 收藏 | 是 |
-| `douyin_follow` | 关注 | 是 |
 | `douyin_me` | 看自己的账号信息 | 否 |
 | `douyin_notifications` | 看通知 | 否 |
 
-所有工具只在主人私聊（`level === 'full'`）挂载。
+评论/点赞/收藏/关注/自动召唤等写操作已从开源版移除，避免误用导致封号。
 
-### 安装 dy-cli
+所有工具只在主人私聊（`level === 'full'`）挂载，且模块默认 `enabled: false`。
 
-参考 `dsh-douyin-toolkit` 的 MIT 项目，放到 `/opt/douyin`（或改模块里的 `REPO` 常量）：
+### 安装 dy-cli（不建议在主服务器）
+
+> 如果你只是想让机器人在服务器上“看看抖音”，不要登录。以下仅作为独立设备/独立小号的参考；登录后的 Cookie 等同于账号控制权，不要放在共享服务器上。
+
+参考 `dsh-douyin-toolkit` 的 MIT 项目，放到独立机器的 `/opt/douyin`（或改模块里的 `REPO` 常量）：
 
 ```bash
 cd /opt/douyin
@@ -59,17 +62,16 @@ DOUYIN_DATA_DIR=/opt/douyin/data
 
 ```json
 {
-  "douyin": { "enabled": true },
+  "douyin": { "enabled": false },
   "modules": {
-    "douyin": { "forkedFrom": "2.0.0", "enabled": true, "useBuiltin": false }
+    "douyin": { "forkedFrom": "2.0.0", "enabled": false, "useBuiltin": false }
   },
   "ext": {
     "douyin": {
-      "enabled": true,
-      "dailyMax": 3,
+      "enabled": false,
+      "dailyMax": 1,
       "dailyBudgetCny": 1,
-      "commentCount": 20,
-      "autoSummon": false
+      "commentCount": 20
     }
   }
 }
@@ -77,15 +79,15 @@ DOUYIN_DATA_DIR=/opt/douyin/data
 
 安全建议：
 
-- `autoSummon=false`：不要自动发评论 `@豆包 总结一下这个视频`，只在主人明确要求时召唤。
-- `dailyMax` 3 左右；`dailyBudgetCny` 1–2。
-- 评论/点赞/收藏/关注属于写操作，先只读跑几天，确认账号没有风控再加。
+- 默认三处都设为 `false`：`douyin.enabled`、`modules.douyin.enabled`、`ext.douyin.enabled`。
+- 不要在服务器上登录；不要保留 Cookie；如果登录过，先在抖音 App 里退出登录，再删除服务器上的 `/opt/douyin/data/home/.dy/cookies/`。
+- 确实要跑：独立设备、独立小号、低频、只读优先；不要在主号/常用号上跑。
 - 风控命中会通过 `api.sendText` 私聊告警；`watched.json` 的 `alerts` 会记录 `risk:YYYY-MM-DDTHH`。
-- 模块内置 `FORBID` 检查：评论内容含 QQ/微信/手机号/服务器/路径/长数字会拒绝。
+- 开源版已移除评论/点赞/收藏/关注/自动召唤，不会因为误调用而写操作。
 
 ### 已知边界
 
-v4 是“接口模式”：搜索、读评论、找豆包总结，不下载视频、不抽帧、不看画面。如果要“真看视频内容”，需要另接 ASR/视觉。
+v4.1 是“接口模式”：热榜、搜索、只读评论、找豆包总结；不下载视频、不抽帧、不看画面，也不写评论/点赞/关注。如果要“真看视频内容”，需要另接 ASR/视觉。
 
 ## 2. 私信桥（`bridges/dy-im`）
 
@@ -115,7 +117,7 @@ v4 是“接口模式”：搜索、读评论、找豆包总结，不下载视�
 - `allowUids`：精确 UID 白名单。
 - 两者都为空时，所有私信都会被跳过（fail-closed）。
 
-### 运行
+### 运行（不建议在主服务器）
 
 ```bash
 cd /opt/dy-im

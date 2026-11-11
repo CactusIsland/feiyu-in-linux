@@ -1,5 +1,11 @@
-// 抖音 v4：接口模式（dy-cli）：搜索 / 看评论 / 找豆包总结 / @豆包召唤
+// 抖音 v4.1：接口模式（dy-cli）：热榜 / 搜索 / 只读评论 / 豆包总结
 // 只在主人私聊挂工具；风控自动通知；每日预算 ¥3。
+//
+// ⚠️ 高风险，默认关闭：
+//   抖音自动化可能触发风控/封号，已有长期封禁（3 年）案例。
+//   不要在共享服务器/主服务器上登录抖音账号，也不要把 Cookie 留在服务器上。
+//   如果确实要跑，请用独立设备、独立小号、低频只读，风险自负。
+//   本开源版已移除评论/点赞/收藏/关注/自动召唤等写操作，只保留只读能力。
 
 import { readFileSync, writeFileSync, mkdirSync, renameSync } from 'node:fs'
 import { join } from 'node:path'
@@ -40,10 +46,10 @@ async function dy(args, timeout = 180000) {
 export default {
   id: 'douyin',
   name: '抖音',
-  version: '4.0.0',
+  version: '4.1.0',
   api: 1,
-  description: '抖音：热榜、搜索、看评论、找豆包总结、@豆包召唤（接口模式，不播视频）',
-  defaults: { enabled: true, dailyMax: 5, dailyBudgetCny: 3, commentCount: 20, autoSummon: false },
+  description: '抖音：热榜、搜索、只读评论、找豆包总结（接口模式，不写评论、不播视频）',
+  defaults: { enabled: false, dailyMax: 5, dailyBudgetCny: 3, commentCount: 20 },
   setup(api) {
     const today = () => new Date().toISOString().slice(0, 10)
     const items = () => (readJson(STATE, { items: [] }).items || [])
@@ -87,14 +93,6 @@ export default {
     }
 
 
-    // ---- 账号操作（只在主人私聊可用）----
-    const FORBID = /(QQ|qq|群号|微信|手机号|服务器|后台|插件|模块|记忆|主人|密钥|token|api[_-]?key|sk-|\.dsh|\/root|\/var|\d{5,12})/
-    function safeText(t) {
-      const x = String(t || '').trim()
-      if (!x) throw new Error('内容是空的')
-      if (FORBID.test(x)) throw new Error('这句话里有不能公开的信息，换一句')
-      return x.slice(0, 200)
-    }
     async function act(label, args) {
       try {
         const out = await dy(args, 180000)
@@ -106,48 +104,6 @@ export default {
 
     const tools = [
 
-      api.defineTool({
-        name: 'douyin_comment_disabled',
-        description: '在一条抖音视频下发一条评论。内容会先过隐私检查。',
-        properties: { target: { type: 'string', description: '视频链接或 id' }, text: { type: 'string' } },
-        required: ['target', 'text'],
-        execute: async ({ target, text }) => {
-          const id = String(target).match(/(\d{15,})/)?.[1]
-          if (!id) return { ok: false, message: '给我视频链接或 id' }
-          let t
-          try { t = safeText(text) } catch (e) { return { ok: false, message: e.message } }
-          return await act('评论', ['comment', id, '-c', t])
-        },
-      }),
-      api.defineTool({
-        name: 'douyin_like_disabled',
-        description: '给一条抖音视频点赞。',
-        properties: { target: { type: 'string' } },
-        required: ['target'],
-        execute: async ({ target }) => {
-          const id = String(target).match(/(\d{15,})/)?.[1]
-          if (!id) return { ok: false, message: '给我视频链接或 id' }
-          return await act('点赞', ['like', id])
-        },
-      }),
-      api.defineTool({
-        name: 'douyin_favorite_disabled',
-        description: '收藏一条抖音视频。',
-        properties: { target: { type: 'string' } },
-        required: ['target'],
-        execute: async ({ target }) => {
-          const id = String(target).match(/(\d{15,})/)?.[1]
-          if (!id) return { ok: false, message: '给我视频链接或 id' }
-          return await act('收藏', ['favorite', id])
-        },
-      }),
-      api.defineTool({
-        name: 'douyin_follow_disabled',
-        description: '关注一个抖音用户。参数可以是用户主页链接或 sec_uid。',
-        properties: { user: { type: 'string' } },
-        required: ['user'],
-        execute: async ({ user }) => await act('关注', ['follow', String(user)]),
-      }),
       api.defineTool({
         name: 'douyin_me',
         description: '看她自己这个抖音号的信息。',
@@ -184,10 +140,10 @@ export default {
       }),
       api.defineTool({
         name: 'douyin_watch',
-        description: '看一条抖音视频的评论区：读评论，找豆包的总结；没有的话可以 @豆包 召唤。参数是视频 id 或链接。',
-        properties: { target: { type: 'string' }, summon: { type: 'boolean', description: '没找到豆包时是否发评论召唤' } },
+        description: '看一条抖音视频的评论区：读评论，找豆包的总结。只读，不会发评论或召唤。参数是视频 id 或链接。',
+        properties: { target: { type: 'string' } },
         required: ['target'],
-        execute: async ({ target, summon }) => {
+        execute: async ({ target }) => {
           if (todayItems().length >= Number(api.settings().dailyMax || 5)) return { ok: false, message: '今天看够 5 条了' }
           if (spent() >= Number(api.settings().dailyBudgetCny || 3)) return { ok: false, message: '今天抖音预算用完了（¥3）' }
           const id = String(target).match(/(\d{15,})/)?.[1]
@@ -197,22 +153,14 @@ export default {
           catch (e) { const m = String(e.stderr || e.message); if (RISK.test(m)) await alertRisk(m); return { ok: false, message: '评论区没拿到：' + m.slice(0, 120) } }
 
           const doubao = list.find((c) => /豆包/.test(c.who) && c.text.length > 20)
-          let summoned = false
-          if (!doubao && (summon || api.settings().autoSummon)) {
-            try {
-              await dy(['comment', id, '-c', '@豆包 总结一下这个视频'], 180000)
-              summoned = true
-            } catch (e) { /* 写评论失败不致命 */ }
-          }
-
           const top = list.slice(0, 8).map((c) => `${c.who}：${c.text.slice(0, 50)}`)
-          const item = { at: new Date().toISOString(), id, doubao: doubao?.text.slice(0, 800) || '', top, summoned, costCny: 0.02 }
+          const item = { at: new Date().toISOString(), id, doubao: doubao?.text.slice(0, 800) || '', top, costCny: 0.02 }
           const s = readJson(STATE, { items: [], alerts: [] })
           s.items = [...(s.items || []).slice(-199), item]
           writeJson(STATE, s)
 
           if (doubao) return { ok: true, summary: doubao.text.slice(0, 600), top, note: '豆包在评论区的总结' }
-          return { ok: true, top, note: summoned ? '已经 @豆包，等它回复后再看一次' : '评论区没有豆包', count: list.length }
+          return { ok: true, top, note: '评论区没有豆包（本版本不自动召唤）', count: list.length }
         },
       }),
       api.defineTool({
@@ -243,7 +191,7 @@ export default {
     })
 
     api.route('/state', async () => ({ ok: true, today: todayItems().length, spentCny: spent(), total: items().length }))
-    api.rule('抖音走接口，不开浏览器。看视频先读评论区找豆包，没有再召唤。抖音上不要提 QQ、后台、服务器。')
+    api.rule('抖音走接口，不开浏览器。看视频只读评论区找豆包；本版本不写评论、不点赞、不关注、不召唤。抖音上不要提 QQ、后台、服务器。')
     api.log.info?.('抖音 v4（搜索/评论/豆包）已挂上')
   },
 }

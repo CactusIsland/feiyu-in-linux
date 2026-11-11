@@ -1,14 +1,18 @@
 # dy-im — 抖音私信桥
 
+> [!WARNING]
+> **不要在服务器上登录抖音私信桥。** 抖音自动化可能触发风控/封号，已有 3 年封禁案例。桥默认不启用；登录态等同于账号控制权，不要放在共享服务器上。如果一定要跑，请用独立设备、独立小号，并自行承担风险。
+
 把抖音私信转给 DSH 的 `douyin` 模块，再把生成的回复发回抖音。纯 Node，不依赖浏览器。
 
 ```text
 抖音私信  ⇄  bridge.mjs (douyin-im)  ⇄  POST /aurabot/api/ext/douyin/dm  ⇄  DSH
 ```
 
-## 安装
+## 安装（不建议在主服务器）
 
 ```bash
+# 只在独立设备/独立小号上考虑；不要在主服务器扫码登录
 cd /opt/dy-im
 npm install
 cp bridge.json.example bridge.json
